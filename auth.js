@@ -85,7 +85,8 @@ const Auth = (() => {
     // dinaintea lui @ ca nume afișat.
     const displayLabel = name.includes('@') ? name.split('@')[0] : name;
     const { data, error } = await c.auth.signUp({
-      email: toEmail(name), password, options: { data: { username: displayLabel } },
+      email: name.includes('@') ? name.toLocaleLowerCase('ro-RO') : name.toLocaleLowerCase('ro-RO') + DOMAIN,
+      password, options: { data: { username: displayLabel } },
     });
     if (error) throw new Error(userFriendlyError(error.message));
     if (data.user && !data.session) throw new Error('Confirmarea prin email este activă în configurația Supabase.');
