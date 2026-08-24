@@ -508,6 +508,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
 let accountUser = '';
 function updateAccount() {
   document.getElementById('userName').textContent = accountUser || 'Conectează-te';
+  document.getElementById('statsBtn').hidden = !accountUser;
   document.getElementById('authForm').hidden = !!accountUser;
   document.getElementById('authLogged').hidden = !accountUser;
   document.getElementById('authLoggedName').textContent = accountUser;
@@ -528,6 +529,11 @@ function text(tag, value, className) { const node = document.createElement(tag);
 async function openStats() {
   const modal = document.getElementById('statsModal'), content = document.getElementById('statsContent');
   modal.hidden = false;
+  if (!accountUser) {
+    document.getElementById('statsTitle').textContent = '🏆 Clasament';
+    content.replaceChildren(text('p', 'Conectează-te pentru clasament și istoricul rezultatelor.'));
+    return;
+  }
   if (!activeTestId) {
     document.getElementById('statsTitle').textContent = '🏆 Clasament';
     content.replaceChildren(text('p', 'Alege mai întâi un test ca să vezi clasamentul lui.'));
@@ -536,7 +542,7 @@ async function openStats() {
   content.replaceChildren(text('p', 'Se încarcă…'));
   try {
     const [stats, ranking] = await Promise.all([
-      accountUser ? TestTracker.ownStats(QUIZ_VERSION) : null,
+      TestTracker.ownStats(QUIZ_VERSION),
       TestTracker.leaderboard(QUIZ_VERSION),
     ]);
     content.replaceChildren();

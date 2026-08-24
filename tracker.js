@@ -70,7 +70,7 @@ const Tracker = (() => {
     const rows = await rpc('talant_my_stats');
     return Array.isArray(rows) ? rows[0] || null : rows;
   }
-  async function leaderboard() { return enabled ? rpc('talant_leaderboard', { p_limit: 20 }) : []; }
+  async function leaderboard() { return enabled && Auth.userId() ? rpc('talant_leaderboard', { p_limit: 20 }) : []; }
   async function myAttempts(limit = 20) { return enabled && Auth.userId() ? rpc('talant_my_attempts', { p_limit: limit }) : []; }
 
   window.addEventListener('online', () => { flush(); });
