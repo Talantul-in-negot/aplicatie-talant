@@ -18,11 +18,12 @@ const Auth = (() => {
     return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 30);
   }
 
-  function toEmail(username) {
+  function loginEmails(username) {
     const value = normalizeUsername(username).toLocaleLowerCase('ro-RO').replace(/\s/g, '_');
     // Formularul este bazat pe nume de utilizator, însă acceptăm și emailul
     // intern complet pentru conturile create manual din Supabase Dashboard.
-    return value.includes('@') ? value : value + DOMAIN;
+    if (value.includes('@')) return [value];
+    return [value + DOMAIN, value + '@test.com'];
   }
 
   function displayName(user) {
@@ -61,10 +62,16 @@ const Auth = (() => {
   async function signIn(username, password) {
     const c = client();
     if (!c) throw new Error('Serviciul de autentificare nu este disponibil.');
-    const { data, error } = await c.auth.signInWithPassword({ email: toEmail(username), password });
-    if (error) throw new Error(userFriendlyError(error.message));
-    session = data.session;
-    return currentUser();
+    let lastError = null;
+    for (const email of loginEmails(username)) {
+      const { data, error } = await c.auth.signInWithPassword({ email, password });
+      if (!error) {
+        session = data.session;
+        return currentUser();
+      }
+      lastError = error;
+    }
+    throw new Error(userFriendlyError(lastError?.message));
   }
 
   async function signUp(username, password) {
