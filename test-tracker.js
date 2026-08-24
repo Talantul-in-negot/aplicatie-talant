@@ -72,7 +72,7 @@ const TestTracker = (() => {
     log(attempt);
     const saved = await flush();
     if (!saved) throw lastError || new Error('Rezultatul nu a putut fi salvat.');
-    return ownStats(attempt.quiz_version);
+    return ownStats(attempt.p_quiz_version);
   }
   async function ownStats(quizVersion) {
     if (!enabled || !Auth.userId()) return null;
