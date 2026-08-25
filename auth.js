@@ -22,8 +22,13 @@ const Auth = (() => {
     const value = normalizeUsername(username).toLocaleLowerCase('ro-RO').replace(/\s/g, '_');
     // Formularul este bazat pe nume de utilizator, însă acceptăm și emailul
     // intern complet pentru conturile create manual din Supabase Dashboard.
-    if (value.includes('@')) return [value];
-    return [value + DOMAIN, value + '@test.com'];
+    if (!value.includes('@')) return [value + DOMAIN, value + '@test.com'];
+    // Emailul complet poate fi tastat cu domeniul greșit față de cel cu care
+    // a fost creat contul (ex. cont creat pe @test.com, dar userul scrie
+    // @talant.app) — încercăm și varianta cu domeniul opus înainte să cedăm.
+    const [local, domain] = value.split('@');
+    const sibling = domain === 'test.com' ? DOMAIN.slice(1) : domain === DOMAIN.slice(1) ? 'test.com' : null;
+    return sibling ? [value, `${local}@${sibling}`] : [value];
   }
 
   function displayName(user) {
