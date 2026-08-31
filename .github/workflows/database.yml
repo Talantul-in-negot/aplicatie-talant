@@ -1,0 +1,33 @@
+name: Apply Supabase migrations
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - supabase/**
+      - apply-migrations.js
+
+permissions:
+  contents: read
+
+concurrency:
+  group: talant-production-database
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Require the production database secret
+        shell: bash
+        run: test -n "$SUPABASE_DB_URL"
+      - name: Apply pending migrations transactionally
+        run: npm run db:apply

@@ -1,32 +1,61 @@
-# Talant — Cartea lui Ioan
+# Talant — aplicația de teste
 
-Quiz static, cu conturi, punctaj cumulativ, istoric de încercări și clasament.
+Aplicație statică pentru testele Samuel și quiz-ul Ioan, cu autentificare,
+scorare verificată în Supabase și clasament separat pe grupe.
 
-## Configurare rezultate și clasament
+## Structură canonică
 
-1. Deschide proiectul Supabase folosit de aplicație și rulează o singură dată
-   [migrarea SQL](supabase/20260821_talant_scoring.sql) în SQL Editor.
-2. În Supabase Auth, dezactivează confirmarea prin email dacă vrei ca un cont nou
-   să poată intra imediat.
-3. Rulează `npm run build` înainte de publicare prin Sites; pagina publică
-   răspunde la rădăcina domeniului.
+- `index.html` este singura implementare a testelor Samuel și pagina servită la `/`.
+- `1samuel-test.html` este doar un alias care redirecționează către `/`, păstrând query-ul `?test=...`.
+- `quiz.html` conține quiz-ul Ioan.
+- `build-site.js` servește aceeași pagină `index.html` la `/` și în build-ul Cloudflare.
 
-Conturile Talant folosesc intern domeniul `@talant.app`, distinct de cele din
-„Citim împreună”. Utilizatorul vede și introduce numai numele ales.
+Nu copia logica Samuel într-o a doua pagină. `npm test` verifică automat această regulă.
 
-## Reguli de punctaj și audit
-
-- 10 puncte pentru fiecare întrebare rezolvată corect, o singură dată per versiune de quiz.
-- Fiecare răspuns este memorat cu setul, ID-ul întrebării, opțiunile alese,
-  rezultatul și momentul încercării.
-- Totalul și clasamentul sunt calculate în Supabase din jurnalul de încercări;
-  browserul nu trimite un total de puncte.
-- Pentru integritate deplină împotriva modificării din DevTools, cheia de răspuns
-  trebuie menținută exclusiv pe server. În această aplicație statică, răspunsurile
-  există și în `questions.js`, deci mecanismul este auditabil, nu anti-trișare.
-
-## Verificare
+## Verificare locală
 
 ```powershell
+npm ci
 npm test
+npm run build
+```
+
+Testele validează toate întrebările, sintaxa scripturilor inline, contractele RPC,
+rutele canonice și faptul că fiecare răspuns corect din frontend există în migrarea
+server-side.
+
+## Supabase
+
+Baza live este considerată baselined până la `20260823`. Migrațiile noi se adaugă
+în `supabase/migrations.txt`, în ordinea execuției. Workflow-ul
+`Apply Supabase migrations` le rulează tranzacțional și înregistrează fiecare fișier
+în `public.talant_migration_history`, astfel încât nu este executat de două ori.
+
+Configurează în GitHub, la **Settings → Secrets and variables → Actions**, secretul:
+
+- `SUPABASE_DB_URL` — connection string-ul PostgreSQL al proiectului Supabase.
+
+Migrarea `20260824_secure_scoring.sql` mută validarea răspunsurilor pe server și
+înlocuiește în siguranță vechile semnături RPC.
+
+## Publicare și verificare live
+
+GitHub Pages publică automat branch-ul `main`, folderul `/(root)`. Workflow-ul
+`Quality and live verification` rulează testele înainte de verificarea publicării,
+așteaptă până când pagina publică livrează scorarea `v2`, apoi execută testul live.
+
+Pentru testul end-to-end creează un cont Supabase dedicat CI și configurează secretele:
+
+- `TALANT_E2E_EMAIL`
+- `TALANT_E2E_PASSWORD`
+
+Contul trebuie folosit numai pentru CI. Testul autentifică acel cont, trimite un
+rezultat corect pentru `samuel1-3-v2`, verifică scorul returnat de RPC și confirmă
+apariția în clasamentul grupei. ID-ul încercării este stabil, deci rerulările nu
+creează încercări duplicate.
+
+Testul poate fi executat și local, după setarea variabilelor de mediu:
+
+```powershell
+npm run test:e2e
 ```

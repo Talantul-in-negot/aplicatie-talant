@@ -5,7 +5,10 @@
   "main": "questions.js",
   "scripts": {
     "build": "node build-site.js",
-    "test": "node verify-questions.js"
+    "test": "node verify-questions.js && node verify-project.js",
+    "test:e2e": "node e2e-live.js",
+    "db:apply": "node apply-migrations.js",
+    "deploy": "npm run build && dotenv -e .env -- wrangler deploy"
   },
   "keywords": [],
   "author": "",
@@ -13,5 +16,9 @@
   "type": "commonjs",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.92.0"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^11.0.0",
+    "wrangler": "^4.127.1"
   }
 }
