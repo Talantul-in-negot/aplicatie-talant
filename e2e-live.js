@@ -73,7 +73,9 @@ async function rpc(token, name, body) {
   }
 
   const leaderboard = await rpc(token, 'talant_test_leaderboard', { p_quiz_version: 'samuel1-3-v2', p_limit: 100 });
-  const expectedName = String(auth.user.user_metadata?.username || email.split('@')[0]).split('@')[0].toLocaleLowerCase('ro-RO');
+  // Keep this assertion aligned with talant_test_recalculate_own_score: accounts
+  // without an explicit username are recorded as "Utilizator", not their email.
+  const expectedName = String(auth.user.user_metadata?.username || 'Utilizator').split('@')[0].toLocaleLowerCase('ro-RO');
   const found = Array.isArray(leaderboard) && leaderboard.some(row => String(row.user_name).toLocaleLowerCase('ro-RO') === expectedName && Number(row.best_points) === expectedPoints);
   if (!found) throw new Error('The test account score was saved but was not returned by its leaderboard.');
 
