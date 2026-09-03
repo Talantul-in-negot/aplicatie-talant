@@ -37,7 +37,8 @@ for (const file of manifest) {
   if (!/^[a-zA-Z0-9_.-]+\.sql$/.test(file)) throw new Error(`Invalid migration filename: ${file}`);
   const fullPath = path.join(root, 'supabase', file);
   if (!fs.existsSync(fullPath)) throw new Error(`Missing migration: ${file}`);
-  const check = spawnSync('psql', [databaseUrl, '-X', '-tAc', `select 1 from public.talant_migration_history where name = '${file}'`], {
+  const check = spawnSync('psql', [databaseUrl, '-X', '-v', `name=${file}`, '-tAc',
+    `select 1 from public.talant_migration_history where name = :'name'`], {
     encoding: 'utf8', env: process.env,
   });
   if (check.error) throw check.error;
@@ -45,10 +46,15 @@ for (const file of manifest) {
   if (check.stdout.trim() === '1') { console.log(`Skipping ${file} (already applied).`); continue; }
 
   console.log(`Applying ${file}...`);
+  // psql already wraps the whole input in one transaction (-1). A literal
+  // begin;/commit; inside the file would close that transaction early, so the
+  // history insert could commit separately from the migration it records.
+  // Every migration opens with a comment block, so anchoring to the start of
+  // the file never matched — strip the standalone statements wherever they are.
   const sql = fs.readFileSync(fullPath, 'utf8')
-    .replace(/^\s*begin;\s*/i, '')
-    .replace(/\s*commit;\s*$/i, '');
-  psql(['-1', '-f', '-'], `${sql}\ninsert into public.talant_migration_history(name) values ('${file}');\n`);
+    .replace(/^[ \t]*(?:begin|commit)[ \t]*;[ \t]*\r?$/gim, '');
+  psql(['-1', '-v', `name=${file}`, '-f', '-'],
+    `${sql}\ninsert into public.talant_migration_history(name) values (:'name');\n`);
 }
 
 console.log(`Applied ${manifest.length} migrations.`);

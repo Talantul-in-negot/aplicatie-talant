@@ -1,6 +1,9 @@
-const CACHE_NAME = 'cartea-lui-ioan-v2';
+// Bump CACHE_NAME la orice schimbare de conținut: activate șterge versiunile
+// vechi, deci un barem corectat nu poate rămâne servit din cache.
+const CACHE_NAME = 'talant-v3';
 const APP_SHELL = [
-  './', 'quiz.html', 'questions.js', 'config.js', 'auth.js', 'tracker.js',
+  './', 'index.html', 'quiz.html', 'questions.js', 'config.js', 'auth.js',
+  'tracker.js', 'test-tracker.js',
   'manifest.webmanifest', 'icon-192.png', 'icon-512.png'
 ];
 

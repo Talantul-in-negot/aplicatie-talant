@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- GitHub Pages nu poate trimite antete, deci politica merge în pagină. Worker-ul
+     din build-site.js trimite aceeași politică ca antet, plus frame-ancestors. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://llnlzbczdcjarzoizwgi.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title id="pageTitle">Talantul în negoț</title>
 <style>
   * { box-sizing:border-box; margin:0; padding:0; }
@@ -175,28 +178,32 @@
   </section>
 </div>
 
-<script src="data/1samuel-1-3.js?v=1"></script>
-<script src="data/1samuel-4-6.js?v=1"></script>
-<script src="data/1samuel-7-9.js?v=1"></script>
-<script src="data/1samuel-10-12.js?v=1"></script>
-<script src="data/1samuel-13-15.js?v=1"></script>
-<script src="data/1samuel-16-18.js?v=1"></script>
-<script src="data/1samuel-19-21.js?v=1"></script>
-<script src="data/1samuel-22-24.js?v=1"></script>
-<script src="data/1samuel-25-27.js?v=1"></script>
-<script src="data/1samuel-28-30.js?v=1"></script>
-<script src="data/1samuel31-2samuel1-2.js?v=1"></script>
-<script src="data/2samuel-3-5.js?v=1"></script>
-<script src="data/2samuel-6-8.js?v=1"></script>
-<script src="data/2samuel-9-11.js?v=1"></script>
-<script src="data/2samuel-12-14.js?v=1"></script>
-<script src="data/2samuel-15-17.js?v=1"></script>
-<script src="data/2samuel-18-20.js?v=1"></script>
-<script src="data/2samuel-21-24.js?v=1"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="auth.js"></script>
-<script src="test-tracker.js?v=3"></script>
+<script src="data/1samuel-1-3.js?v=4"></script>
+<script src="data/1samuel-4-6.js?v=4"></script>
+<script src="data/1samuel-7-9.js?v=4"></script>
+<script src="data/1samuel-10-12.js?v=4"></script>
+<script src="data/1samuel-13-15.js?v=4"></script>
+<script src="data/1samuel-16-18.js?v=4"></script>
+<script src="data/1samuel-19-21.js?v=4"></script>
+<script src="data/1samuel-22-24.js?v=4"></script>
+<script src="data/1samuel-25-27.js?v=4"></script>
+<script src="data/1samuel-28-30.js?v=4"></script>
+<script src="data/1samuel31-2samuel1-2.js?v=4"></script>
+<script src="data/2samuel-3-5.js?v=4"></script>
+<script src="data/2samuel-6-8.js?v=4"></script>
+<script src="data/2samuel-9-11.js?v=4"></script>
+<script src="data/2samuel-12-14.js?v=4"></script>
+<script src="data/2samuel-15-17.js?v=4"></script>
+<script src="data/2samuel-18-20.js?v=4"></script>
+<script src="data/2samuel-21-24.js?v=4"></script>
+<!-- Versiune fixă + integrity: pagina cere parole, deci nu poate rula orice
+     versiune viitoare pe care CDN-ul o servește pentru eticheta „@2". -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.min.js"
+        integrity="sha384-0UK+HVlz5Y7F//atDpPysyocv/PjGXQoBX+XSaL/eEotARW8rPFh+lL5sO0Ljzfi"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="config.js?v=4"></script>
+<script src="auth.js?v=4"></script>
+<script src="test-tracker.js?v=4"></script>
 <script>
 // ── Fiecare test are propriul quiz_version → scor și clasament separate,
 // deși toate folosesc același cont și aceleași tabele Supabase. ──
@@ -246,7 +253,9 @@ function showSelector(pushUrl) {
 }
 
 function startTest(id, pushUrl) {
-  if (!TESTS[id]) id = 'samuel1-2';
+  // Un id necunoscut nu are pe ce cădea înapoi — vechiul fallback trimitea la
+  // 'samuel1-2', care nu există în TESTS, deci pagina crăpa la activeTest.data().
+  if (!TESTS[id]) { showSelector(pushUrl); return; }
   activeTestId = id;
   activeTest = TESTS[id];
   QUIZ_VERSION = activeTest.quizVersion;
@@ -504,11 +513,26 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   if (!accountUser) {
     saveNote = '<p style="margin-top:14px;color:#b91c1c;font-size:.85rem">Conectează-te înainte de a finaliza dacă vrei ca rezultatul să intre în clasament.</p>';
   } else {
-    try {
-      updateScoreChip(await TestTracker.record({ p_quiz_version: QUIZ_VERSION, p_answers: submittedAnswers }));
-      saveNote = '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în clasament.</p>';
-    } catch (error) {
-      saveNote = `<p style="margin-top:14px;color:#b91c1c;font-size:.85rem">Nu s-a salvat: ${error.message || 'eroare de conexiune'}</p>`;
+    // Doar primele încercări intră în clasament, așa că trimiterea se confirmă
+    // explicit — altfel un submit din greșeală ar bloca scorul pe loc.
+    const prior = await TestTracker.ownStats(QUIZ_VERSION).catch(() => null);
+    const cap = Number(prior?.scored_attempts) || 1;
+    const used = Number(prior?.attempts) || 0;
+    const counts = used < cap;
+    const question = counts
+      ? `Trimiți rezultatul în clasament? Este încercarea ${used + 1} din ${cap} care se punctează.`
+      : `Ai folosit deja ${cap === 1 ? 'singura încercare punctată' : `cele ${cap} încercări punctate`}. Rezultatul se salvează în istoric, dar clasamentul nu se schimbă. Continui?`;
+    if (!confirm(question)) {
+      saveNote = '<p style="margin-top:14px;color:#b45309;font-size:.85rem">Rezultat nesalvat. Poți corecta răspunsurile și trimite din nou.</p>';
+    } else {
+      try {
+        updateScoreChip(await TestTracker.record({ p_quiz_version: QUIZ_VERSION, p_answers: submittedAnswers }));
+        saveNote = counts
+          ? '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în clasament.</p>'
+          : '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în istoric. Clasamentul păstrează încercarea punctată.</p>';
+      } catch (error) {
+        saveNote = `<p style="margin-top:14px;color:#b91c1c;font-size:.85rem">Nu s-a salvat: ${error.message || 'eroare de conexiune'}</p>`;
+      }
     }
   }
 

@@ -18,8 +18,15 @@ const Auth = (() => {
     return String(value || '').trim().replace(/\s+/g, ' ').slice(0, 30);
   }
 
+  // Partea locală a emailului sintetic. Înregistrarea și autentificarea trebuie
+  // să o construiască identic, altfel un nume cu spațiu creează contul pe
+  // „ana maria@…" dar îl caută la login pe „ana_maria@…".
+  function accountLocalPart(username) {
+    return normalizeUsername(username).toLocaleLowerCase('ro-RO').replace(/\s/g, '_');
+  }
+
   function loginEmails(username) {
-    const value = normalizeUsername(username).toLocaleLowerCase('ro-RO').replace(/\s/g, '_');
+    const value = accountLocalPart(username);
     // Formularul este bazat pe nume de utilizator, însă acceptăm și emailul
     // intern complet pentru conturile create manual din Supabase Dashboard.
     if (!value.includes('@')) return [value + DOMAIN, value + '@test.com'];
@@ -83,15 +90,19 @@ const Auth = (() => {
     const name = normalizeUsername(username);
     if (name.length < 2) throw new Error('Numele trebuie să aibă cel puțin 2 caractere.');
     if (password.length < 6) throw new Error('Parola trebuie să aibă cel puțin 6 caractere.');
+    // Înregistrarea acceptă doar nume de utilizator. Un email complet ar fi
+    // devenit adresa contului, iar domeniul lui decidea cândva grupa din
+    // clasament — deci oricine își putea alege grupa scriind aici un email de
+    // biserică. Conturile pe domenii de grupă se creează din Supabase Dashboard,
+    // iar grupa se atribuie în talant_group_members.
+    if (name.includes('@')) {
+      throw new Error('Scrie doar numele de utilizator, fără email. Conturile de grupă sunt create de administrator.');
+    }
     const c = client();
     if (!c) throw new Error('Serviciul de autentificare nu este disponibil.');
-    // Numele afișat nu trebuie să includă niciodată domeniul de email — dacă
-    // s-a folosit un email complet (ex. cont de grupă), păstrăm doar partea
-    // dinaintea lui @ ca nume afișat.
-    const displayLabel = name.includes('@') ? name.split('@')[0] : name;
     const { data, error } = await c.auth.signUp({
-      email: name.includes('@') ? name.toLocaleLowerCase('ro-RO') : name.toLocaleLowerCase('ro-RO') + DOMAIN,
-      password, options: { data: { username: displayLabel } },
+      email: accountLocalPart(name) + DOMAIN,
+      password, options: { data: { username: name } },
     });
     if (error) throw new Error(userFriendlyError(error.message));
     if (data.user && !data.session) throw new Error('Confirmarea prin email este activă în configurația Supabase.');

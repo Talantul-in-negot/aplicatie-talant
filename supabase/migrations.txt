@@ -1,3 +1,4 @@
 # The live database is baselined through 20260823. Append every new migration
 # here in execution order; apply-migrations.js records each successful file.
 20260824_secure_scoring.sql
+20260903_harden_identity_groups_attempts.sql

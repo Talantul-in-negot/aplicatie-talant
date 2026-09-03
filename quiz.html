@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- GitHub Pages nu poate trimite antete, deci politica merge în pagină. Worker-ul
+     din build-site.js trimite aceeași politică ca antet, plus frame-ancestors. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://llnlzbczdcjarzoizwgi.supabase.co; object-src 'none'; base-uri 'self'; form-action 'none'">
 <title>Quiz – Cartea lui Ioan</title>
 <meta name="theme-color" content="#160047">
 <meta name="mobile-web-app-capable" content="yes">
@@ -123,11 +126,15 @@
 </div>
 <div class="modal-backdrop" id="authModal" hidden><section class="modal" aria-labelledby="authTitle"><button class="modal-close" id="authClose" type="button" aria-label="Închide">×</button><h2 id="authTitle">Contul meu</h2><p id="authIntro">Conectează-te ca să-ți păstrezi punctajul și istoricul încercărilor. Conturile noi sunt create de administrator.</p><div id="authForm"><input id="authUsername" maxlength="30" autocomplete="username" placeholder="Nume utilizator"><input id="authPassword" type="password" maxlength="64" autocomplete="current-password" placeholder="Parolă"><p class="auth-error" id="authError" role="alert"></p><div class="modal-actions"><button id="loginBtn" type="button">Intră în cont</button></div></div><div id="authLogged" hidden><p>Conectat ca <strong id="authLoggedName"></strong>.</p><div class="modal-actions"><button id="logoutBtn" class="secondary" type="button">Ieși din cont</button></div></div></section></div>
 <div class="modal-backdrop" id="statsModal" hidden><section class="modal" aria-labelledby="statsTitle"><button class="modal-close" id="statsClose" type="button" aria-label="Închide">×</button><h2 id="statsTitle">🏆 Clasament și activitate</h2><div id="statsContent">Se încarcă…</div></section></div>
-<script src="questions.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="config.js"></script>
-<script src="auth.js"></script>
-<script src="tracker.js"></script>
+<script src="questions.js?v=4"></script>
+<!-- Versiune fixă + integrity: pagina cere parole, deci nu poate rula orice
+     versiune viitoare pe care CDN-ul o servește pentru eticheta „@2". -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.114.0/dist/umd/supabase.min.js"
+        integrity="sha384-0UK+HVlz5Y7F//atDpPysyocv/PjGXQoBX+XSaL/eEotARW8rPFh+lL5sO0Ljzfi"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script src="config.js?v=4"></script>
+<script src="auth.js?v=4"></script>
+<script src="tracker.js?v=4"></script>
 <script>
 // ════════════════════════════════════════════════════════════
 // UTILITIES

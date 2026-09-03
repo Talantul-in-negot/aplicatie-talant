@@ -16,7 +16,31 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  verify:
+    # Migrările se aplică automat în producție, deci întâi le rulăm pe o bază
+    # curată și verificăm garanțiile de scorare.
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: talant
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d talant"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      TALANT_TEST_DB_URL: postgresql://postgres:postgres@localhost:5432/talant
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm run test:db
+
   migrate:
+    needs: verify
     runs-on: ubuntu-latest
     environment: production
     env:

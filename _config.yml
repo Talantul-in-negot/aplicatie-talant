@@ -1,0 +1,33 @@
+# GitHub Pages publică acest repo din /(root), deci ORICE fișier commis este
+# servit public. Lista de mai jos ține în afara site-ului tot ce nu face parte
+# din aplicație — în primul rând supabase/, care conține baremele complete ale
+# tuturor testelor. Fără această excludere, cheile de răspuns erau descărcabile
+# de oricine de la /supabase/20260824_secure_scoring.sql.
+#
+# verify-project.js verifică lista, iar e2e-live.js confirmă pe site-ul publicat
+# că /supabase/... răspunde 404.
+exclude:
+  - supabase/
+  - scripts/
+  - data/*.pdf
+  - db/
+  - tasks/
+  - .github/
+  - node_modules/
+  - dist/
+  - apply-migrations.js
+  - build-site.js
+  - e2e-live.js
+  - generate-distractors.js
+  - test-batch.js
+  - verify-project.js
+  - verify-questions.js
+  - package.json
+  - package-lock.json
+  - wrangler.toml
+  - README.md
+  - .env.example
+
+# Fișierele aplicației sunt HTML/JS statice — nu vrem ca Jekyll să le
+# interpreteze ca șabloane Liquid.
+plugins: []
