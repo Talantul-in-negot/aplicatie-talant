@@ -13,6 +13,8 @@ const manifest = fs.readFileSync(path.join(root, 'supabase', 'migrations.txt'), 
   .map(line => line.trim())
   .filter(line => line && !line.startsWith('#'));
 
+// Runs a migration/DDL script with its output streamed straight to the CI log
+// (stdout not captured — every CREATE/GRANT/INSERT stays visible for audit).
 function psql(args, input) {
   const result = spawnSync('psql', [databaseUrl, '-X', '-v', 'ON_ERROR_STOP=1', ...args], {
     stdio: input === undefined ? 'inherit' : ['pipe', 'inherit', 'inherit'],
@@ -22,6 +24,25 @@ function psql(args, input) {
   });
   if (result.error) throw result.error;
   if (result.status !== 0) process.exit(result.status || 1);
+}
+
+// Runs a read query and returns its output as a string. Stdout must be
+// captured here (not inherited like psql() above), or the caller can never
+// see the result — the "already applied?" check silently always saw an empty
+// string and re-ran every migration on every invocation, crashing on the
+// second run with a duplicate-key error. Still prints stderr on failure, so a
+// bad query is never silent.
+function psqlQuery(args, input) {
+  const result = spawnSync('psql', [databaseUrl, '-X', '-v', 'ON_ERROR_STOP=1', ...args], {
+    input,
+    encoding: 'utf8',
+    env: process.env,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    if (result.stderr) process.stderr.write(result.stderr);
+    process.exit(result.status || 1);
+  }
   return String(result.stdout || '').trim();
 }
 
@@ -37,13 +58,11 @@ for (const file of manifest) {
   if (!/^[a-zA-Z0-9_.-]+\.sql$/.test(file)) throw new Error(`Invalid migration filename: ${file}`);
   const fullPath = path.join(root, 'supabase', file);
   if (!fs.existsSync(fullPath)) throw new Error(`Missing migration: ${file}`);
-  const check = spawnSync('psql', [databaseUrl, '-X', '-v', `name=${file}`, '-tAc',
-    `select 1 from public.talant_migration_history where name = :'name'`], {
-    encoding: 'utf8', env: process.env,
-  });
-  if (check.error) throw check.error;
-  if (check.status !== 0) process.exit(check.status || 1);
-  if (check.stdout.trim() === '1') { console.log(`Skipping ${file} (already applied).`); continue; }
+  // psql's -c/-tAc single-command mode never interpolates :'var' — that only
+  // happens in script mode (-f), hence -tA + -f - here instead of -tAc.
+  const check = psqlQuery(['-tA', '-v', `name=${file}`, '-f', '-'],
+    `select 1 from public.talant_migration_history where name = :'name';\n`);
+  if (check === '1') { console.log(`Skipping ${file} (already applied).`); continue; }
 
   console.log(`Applying ${file}...`);
   // psql already wraps the whole input in one transaction (-1). A literal
