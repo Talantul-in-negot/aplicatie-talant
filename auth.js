@@ -50,7 +50,10 @@ const Auth = (() => {
   }
 
   function userFriendlyError(message) {
-    if (message?.includes('Invalid login') || message?.includes('invalid_credentials')) return 'Nume sau parolă incorectă.';
+    // Nu există resetare din pagină — dacă parola chiar e uitată, singura cale
+    // e un administrator din Supabase Dashboard (vezi README). Spunem asta aici
+    // ca elevul să nu tot reîncerce combinații la nesfârșit.
+    if (message?.includes('Invalid login') || message?.includes('invalid_credentials')) return 'Nume sau parolă incorectă. Dacă ai uitat parola, cere unui organizator s-o reseteze.';
     if (message?.includes('already registered') || message?.includes('already been registered') || message?.includes('duplicate key') || message?.includes('users_email_partial_key')) return 'Acest nume de utilizator este deja folosit. Încearcă să intri în cont sau alege alt nume.';
     if (message?.includes('email not confirmed') || message?.includes('Email not confirmed')) return 'Acest cont nu este confirmat în Supabase. Verifică să folosești exact același nume sau email cu care a fost creat contul.';
     if (message?.includes('Password should')) return 'Parola trebuie să aibă cel puțin 6 caractere.';

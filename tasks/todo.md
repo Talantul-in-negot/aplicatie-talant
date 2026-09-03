@@ -69,4 +69,6 @@ Toate constatările din auditul din 3 septembrie 2026, cu starea lor.
 2. [x] Contul de CI a fost recreat în Supabase (`ci@talant.app`), secretele
    `TALANT_E2E_EMAIL`/`TALANT_E2E_PASSWORD` au fost actualizate, iar contul a
    fost pus în grupa `ci`.
-3. Decide politica de resetare a parolelor înainte de concurs.
+3. [x] Politica de resetare a parolelor: manuală, de către administrator, din
+   Supabase Dashboard. Documentată în README; mesajul de eroare la login
+   trimite acum către un organizator în loc să lase elevul să reîncerce.

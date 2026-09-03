@@ -154,11 +154,20 @@ creează încercări duplicate.
 npm run test:e2e
 ```
 
-## Limitare cunoscută: recuperarea parolei
+## Politica de resetare a parolei
 
 Conturile folosesc adrese sintetice `@talant.app`, care nu ajung nicăieri, iar
-confirmarea prin email este dezactivată. **Nu există flux de resetare a parolei**:
-o parolă uitată înseamnă un cont pierdut, iar administratorul trebuie să seteze
-alta din Supabase Dashboard (Authentication → Users → Reset password). Merită
-decis înainte de concurs dacă elevii primesc adrese reale sau dacă rămâne
-resetarea manuală.
+confirmarea prin email este dezactivată — Supabase nu poate trimite un email de
+resetare. **Decizie: resetare manuală, de către administrator.** Elevii își aleg
+singuri numele de utilizator și parola la înregistrare, ca până acum; o parolă
+uitată se rezolvă exclusiv prin Supabase Dashboard:
+
+1. **Authentication → Users**, caută contul după numele de utilizator (partea
+   dinaintea lui `@talant.app`) sau `@test.com` pentru conturile de grupă.
+2. Deschide contul → **Reset password** → setează o parolă nouă.
+3. Comunică elevului noua parolă pe alt canal (nu există niciun mecanism automat
+   care s-o trimită).
+
+Are nevoie de un administrator cu acces la Supabase Dashboard disponibil (măcar
+contactabil) pe durata concursului. Nu este nevoie de nicio modificare de cod —
+fluxul de autentificare rămâne cel curent.
