@@ -66,6 +66,7 @@ Toate constatările din auditul din 3 septembrie 2026, cu starea lor.
 
 1. Revizuiește `talant_group_members` — cine s-a înscris singur cu `@test.com`
    înainte de întărire este încă în grupa `biserica`.
-2. Pune contul de CI în grupa `ci` (comanda este în README și în mesajul de eroare
-   al testului live).
+2. [x] Contul de CI a fost recreat în Supabase (`ci@talant.app`), secretele
+   `TALANT_E2E_EMAIL`/`TALANT_E2E_PASSWORD` au fost actualizate, iar contul a
+   fost pus în grupa `ci`.
 3. Decide politica de resetare a parolelor înainte de concurs.
