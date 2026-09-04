@@ -63,8 +63,8 @@
   .chk.sel .box { background:#7c3aed; border-color:#7c3aed; }
 
   .submit-wrap { text-align:center; margin-top:28px; }
-  #submitBtn { padding:14px 34px; background:linear-gradient(135deg,#059669,#10b981); color:#fff; border:none; border-radius:14px; font-size:1.05rem; font-weight:800; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.35); }
-  #submitBtn:hover { opacity:.9; }
+  #submitBtn, #continueAfterResult { padding:14px 34px; background:linear-gradient(135deg,#059669,#10b981); color:#fff; border:none; border-radius:14px; font-size:1.05rem; font-weight:800; cursor:pointer; box-shadow:0 8px 24px rgba(0,0,0,.35); }
+  #submitBtn:hover, #continueAfterResult:hover { opacity:.9; }
   #submitBtn:disabled { opacity:.5; cursor:not-allowed; }
 
   .result-card { background:rgba(255,255,255,.97); border-radius:18px; padding:26px; margin-top:20px; box-shadow:0 10px 40px rgba(0,0,0,.35); }
@@ -543,7 +543,7 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
     <h2>Raport — ce a fost bine și ce s-a greșit</h2>
     ${reportHtml}
   </div>
-  <button class="back-link" id="continueAfterResult" type="button">Continuă → Alege alt test</button>`;
+  <button id="continueAfterResult" type="button" style="margin-top:14px">Continuă → Alege alt test</button>`;
   document.getElementById('continueAfterResult').addEventListener('click', () => showSelector(true));
   box.scrollIntoView({ behavior: 'smooth' });
 });
