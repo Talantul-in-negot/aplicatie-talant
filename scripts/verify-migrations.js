@@ -37,6 +37,7 @@ const MIGRATIONS = [
   '20260823_talant_test_church.sql',
   '20260824_secure_scoring.sql',
   '20260903_harden_identity_groups_attempts.sql',
+  '20260904_test_best_of_all_attempts.sql',
 ];
 
 function docker(args, options = {}) {
@@ -143,7 +144,7 @@ check('perfect answers score full points on the first attempt', () => {
   assert.strictEqual(Number(best), MAX_POINTS, `expected ${MAX_POINTS}, got ${best}`);
 });
 
-check('a later, better attempt does not raise the score past the cap', () => {
+check('a later, better attempt raises the score to the new best', () => {
   sql(record('bogdan@talant.app', EMPTY, 'bbbbbbbb-0000-4000-8000-000000000001'));
   const first = Number(value(`select best_points from public.talant_test_scores
     where user_id = '22222222-2222-4222-8222-222222222222' and quiz_version = '${VERSION}';`));
@@ -151,22 +152,17 @@ check('a later, better attempt does not raise the score past the cap', () => {
   sql(record('bogdan@talant.app', PERFECT, 'bbbbbbbb-0000-4000-8000-000000000002'));
   const after = Number(value(`select best_points from public.talant_test_scores
     where user_id = '22222222-2222-4222-8222-222222222222' and quiz_version = '${VERSION}';`));
-  assert.strictEqual(after, 0, `retry raised the score to ${after}; the cap is not holding`);
+  assert.strictEqual(after, MAX_POINTS, `retry did not raise the score (got ${after}); best-of-all-attempts is not working`);
   const attempts = Number(value(`select attempts from public.talant_test_scores
     where user_id = '22222222-2222-4222-8222-222222222222' and quiz_version = '${VERSION}';`));
   assert.strictEqual(attempts, 2, 'both attempts should still be journalled for audit');
 });
 
-check('raising the cap re-scores the extra attempt', () => {
-  sql(`update public.talant_quiz_settings set scored_attempts = 2 where quiz_version = '*';`);
-  sql(`select auth.sign_in_as('bogdan@talant.app');
-       select public.talant_test_recalculate_own_score('${VERSION}');`);
+check('a later, worse attempt does not lower the score', () => {
+  sql(record('bogdan@talant.app', EMPTY, 'bbbbbbbb-0000-4000-8000-000000000003'));
   const after = Number(value(`select best_points from public.talant_test_scores
     where user_id = '22222222-2222-4222-8222-222222222222' and quiz_version = '${VERSION}';`));
-  assert.strictEqual(after, MAX_POINTS, 'with a cap of 2 the perfect retry should count');
-  sql(`update public.talant_quiz_settings set scored_attempts = 1 where quiz_version = '*';`);
-  sql(`select auth.sign_in_as('bogdan@talant.app');
-       select public.talant_test_recalculate_own_score('${VERSION}');`);
+  assert.strictEqual(after, MAX_POINTS, `a worse retry lowered the score to ${after}; the best-of-all should hold`);
 });
 
 check('display name is frozen against later user_metadata edits', () => {

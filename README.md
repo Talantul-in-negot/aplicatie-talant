@@ -106,22 +106,15 @@ mai influențează nimic.
 
 ### Încercări punctate
 
-Doar primele N încercări intră în clasament (implicit **1**). Reluările
-ulterioare rămân în jurnal pentru audit, dar nu mai pot urca scorul. Pagina cere
-confirmare înainte de trimitere și spune a câta încercare punctată este.
+Clasamentul păstrează **cel mai bun scor din toate încercările** (din
+`20260904_test_best_of_all_attempts.sql`). Toate reluările rămân în jurnal
+pentru audit; niciuna nu poate coborî scorul deja obținut, dar oricare poate să-l
+urce. Pagina tot cere confirmare înainte de trimitere, ca un clic accidental să
+nu intre direct în jurnal.
 
-```sql
--- Valoarea implicită pentru toate testele:
-update public.talant_quiz_settings set scored_attempts = 2 where quiz_version = '*';
-
--- Excepție pentru un singur test:
-insert into public.talant_quiz_settings (quiz_version, scored_attempts)
-values ('samuel1-3-v2', 3)
-on conflict (quiz_version) do update set scored_attempts = excluded.scored_attempts;
-```
-
-Schimbarea plafonului nu necesită deploy: scorurile se recalculează la
-următoarea salvare a fiecărui elev.
+`talant_quiz_settings.scored_attempts` a rămas din politica veche („doar
+primele N încercări") și nu mai influențează scorul — tabelul e păstrat doar ca
+urmă istorică, nu mai e citit de recalcularea scorului.
 
 ## Publicare și verificare live
 

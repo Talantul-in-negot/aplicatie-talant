@@ -250,6 +250,7 @@ function showSelector(pushUrl) {
   document.getElementById('app').style.display = 'none';
   document.getElementById('selectorScreen').style.display = 'block';
   if (pushUrl) history.pushState(null, '', location.pathname);
+  window.scrollTo(0, 0);
 }
 
 function startTest(id, pushUrl) {
@@ -513,23 +514,19 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   if (!accountUser) {
     saveNote = '<p style="margin-top:14px;color:#b91c1c;font-size:.85rem">Conectează-te înainte de a finaliza dacă vrei ca rezultatul să intre în clasament.</p>';
   } else {
-    // Doar primele încercări intră în clasament, așa că trimiterea se confirmă
-    // explicit — altfel un submit din greșeală ar bloca scorul pe loc.
-    const prior = await TestTracker.ownStats(QUIZ_VERSION).catch(() => null);
-    const cap = Number(prior?.scored_attempts) || 1;
-    const used = Number(prior?.attempts) || 0;
-    const counts = used < cap;
-    const question = counts
-      ? `Trimiți rezultatul în clasament? Este încercarea ${used + 1} din ${cap} care se punctează.`
-      : `Ai folosit deja ${cap === 1 ? 'singura încercare punctată' : `cele ${cap} încercări punctate`}. Rezultatul se salvează în istoric, dar clasamentul nu se schimbă. Continui?`;
-    if (!confirm(question)) {
+    // Clasamentul păstrează cel mai bun scor din toate încercările, așa că
+    // trimiterea tot se confirmă explicit — altfel un submit din greșeală
+    // (ex. un clic accidental înainte de a termina) ar intra direct în jurnal.
+    if (!confirm('Trimiți rezultatul în clasament? Se păstrează cel mai bun scor din toate încercările tale.')) {
       saveNote = '<p style="margin-top:14px;color:#b45309;font-size:.85rem">Rezultat nesalvat. Poți corecta răspunsurile și trimite din nou.</p>';
     } else {
       try {
-        updateScoreChip(await TestTracker.record({ p_quiz_version: QUIZ_VERSION, p_answers: submittedAnswers }));
-        saveNote = counts
-          ? '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în clasament.</p>'
-          : '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în istoric. Clasamentul păstrează încercarea punctată.</p>';
+        const updated = await TestTracker.record({ p_quiz_version: QUIZ_VERSION, p_answers: submittedAnswers });
+        updateScoreChip(updated);
+        const isNewBest = Number(updated?.best_points) === grandTotal;
+        saveNote = isNewBest
+          ? '<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat — nou cel mai bun scor în clasament.</p>'
+          : `<p style="margin-top:14px;color:#059669;font-size:.85rem">✅ Rezultat salvat în istoric. Clasamentul păstrează scorul tău cel mai bun (${updated?.best_points ?? '—'}/${updated?.max_points ?? grandMax}).</p>`;
       } catch (error) {
         saveNote = `<p style="margin-top:14px;color:#b91c1c;font-size:.85rem">Nu s-a salvat: ${error.message || 'eroare de conexiune'}</p>`;
       }
@@ -545,7 +542,9 @@ document.getElementById('submitBtn').addEventListener('click', async () => {
   <div class="result-card">
     <h2>Raport — ce a fost bine și ce s-a greșit</h2>
     ${reportHtml}
-  </div>`;
+  </div>
+  <button class="back-link" id="continueAfterResult" type="button">Continuă → Alege alt test</button>`;
+  document.getElementById('continueAfterResult').addEventListener('click', () => showSelector(true));
   box.scrollIntoView({ behavior: 'smooth' });
 });
 
