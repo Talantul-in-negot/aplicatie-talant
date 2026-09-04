@@ -41,6 +41,7 @@ const MIGRATIONS = [
   '20260904b_profile_name_unique_per_group.sql',
   '20260904c_display_name_email_fallback.sql',
   '20260904d_test_domain_ci_group.sql',
+  '20260904e_test_qa_group_not_ci.sql',
 ];
 
 function docker(args, options = {}) {
@@ -223,16 +224,19 @@ check('an account with no username metadata gets a name from its email, not "Uti
 });
 
 check('a self-chosen @test.com address no longer joins the church group', () => {
-  // Depuis 20260904d, un email @test.com fără intrare explicită în
-  // talant_group_members cade pe 'ci' (grupa de carantină, izolată din
-  // clasamentul real) — nu mai există nicio cale, prin domeniu, către o
-  // grupă privilegiată precum 'biserica'. Oricum e discutabil: signUp() din
-  // auth.js nu lasă niciodată un elev să aleagă un email/domeniu — accountul
-  // ăsta e inserat direct în test, ca să simuleze un apel direct la API-ul
-  // Supabase, ocolind formularul.
+  // Din 20260904d/e, un email @test.com fără intrare explicită în
+  // talant_group_members cade pe 'qa' — nu mai există nicio cale, prin
+  // domeniu, către o grupă privilegiată precum 'biserica'. Oricum e
+  // discutabil: signUp() din auth.js nu lasă niciodată un elev să aleagă un
+  // email/domeniu — accountul ăsta e inserat direct în test, ca să simuleze
+  // un apel direct la API-ul Supabase, ocolind formularul.
   const group = value(`select auth.sign_in_as('nou@test.com'); select public.talant_my_group();`).split('\n').pop();
-  assert.strictEqual(group, 'ci', `self-registered @test.com landed in ${group}, expected the quarantine group`);
+  assert.strictEqual(group, 'qa', `self-registered @test.com landed in ${group}, expected the 'qa' quarantine group`);
   assert.notStrictEqual(group, 'biserica', 'self-registered church domain landed in the privileged church group');
+  // 'ci' e rezervat strict botului de CI/E2E (ci@talant.app) — e2e-live.js
+  // verifică pe producție că e singurul rând din clasamentul acelei grupe.
+  // Un cont @test.com oarecare NU trebuie să ajungă vreodată acolo.
+  assert.notStrictEqual(group, 'ci', "a @test.com account landed in the CI bot's reserved group");
 });
 
 check('the @test.com fallback only applies without an explicit group membership', () => {

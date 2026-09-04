@@ -90,13 +90,18 @@ adresa la înregistrare, deci putea intra singur în clasamentul bisericii.
 Apartenența se citește acum din `talant_group_members`, care se scrie **doar**
 din SQL Editor / service role; niciun RPC nu poate scrie acolo.
 
-Excepție restrânsă (`20260904d_test_domain_ci_group.sql`): un cont **fără**
-intrare explicită în `talant_group_members` și cu email pe `@test.com` intră
-automat în grupa de carantină `ci` (izolată din clasamentul real), ca un cont
-de test recreat des să nu mai ceară un `insert` manual de fiecare dată. Sigur
-fiindcă `signUp()` din `auth.js` nu lasă niciodată un elev să aleagă un
-domeniu — doar un cont creat manual din Dashboard poate ajunge pe `@test.com`.
-O intrare explicită în `talant_group_members` are mereu prioritate.
+Excepție restrânsă (`20260904d`/`20260904e`): un cont **fără** intrare
+explicită în `talant_group_members` și cu email pe `@test.com` intră automat
+în grupa `qa`, ca un cont de test recreat des să nu mai ceară un `insert`
+manual de fiecare dată. Sigur fiindcă `signUp()` din `auth.js` nu lasă
+niciodată un elev să aleagă un domeniu — doar un cont creat manual din
+Dashboard poate ajunge pe `@test.com`. O intrare explicită în
+`talant_group_members` are mereu prioritate.
+
+**`ci` rămâne exclusiv a botului real de CI/E2E** (`ci@talant.app`) —
+`e2e-live.js` verifică pe producție că e singurul rând din clasamentul acelei
+grupe. Niciun cont de test manual nu trebuie pus vreodată în `ci`; foloseşte
+`qa` pentru orice cont de test personal.
 
 ```sql
 -- Mută un cont în grupa bisericii (implicit toți ceilalți sunt în 'general').

@@ -6,3 +6,4 @@
 20260904b_profile_name_unique_per_group.sql
 20260904c_display_name_email_fallback.sql
 20260904d_test_domain_ci_group.sql
+20260904e_test_qa_group_not_ci.sql
