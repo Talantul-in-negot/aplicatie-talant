@@ -565,6 +565,9 @@ async function submitAuth(mode) {
   try {
     accountUser = mode === 'login' ? await Auth.signIn(username, password) : await Auth.signUp(username, password);
     updateAccount();
+    // Un raport rămas pe ecran de la contul anterior nu mai e valabil odată
+    // ce identitatea s-a schimbat — scorul/istoricul aparțin altui cont acum.
+    document.getElementById('resultBox').innerHTML = '';
     await TestTracker.flush();
     await refreshScoreChip();
     closeAuth();
@@ -618,7 +621,10 @@ document.getElementById('statsBtn').addEventListener('click', openStats);
 document.getElementById('statsClose').addEventListener('click', () => { document.getElementById('statsModal').hidden = true; });
 document.getElementById('loginBtn').addEventListener('click', () => submitAuth('login'));
 document.getElementById('registerBtn').addEventListener('click', () => submitAuth('register'));
-document.getElementById('logoutBtn').addEventListener('click', async () => { await Auth.signOut(); accountUser = ''; updateAccount(); updateScoreChip(null); });
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await Auth.signOut(); accountUser = ''; updateAccount(); updateScoreChip(null);
+  document.getElementById('resultBox').innerHTML = '';
+});
 document.getElementById('authModal').addEventListener('click', e => { if (e.target === e.currentTarget) closeAuth(); });
 document.getElementById('statsModal').addEventListener('click', e => { if (e.target === e.currentTarget) e.currentTarget.hidden = true; });
 document.getElementById('backToSelector').addEventListener('click', () => showSelector(true));
