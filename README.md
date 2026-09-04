@@ -69,10 +69,13 @@ clasamentul putea fi manipulat din browser. Este strict aditivă: nu șterge nic
 ### Nume afișate
 
 Numele din clasament se fixează la prima salvare de scor, în `talant_profiles`,
-și este unic. Anterior era citit din `user_metadata.username`, pe care orice cont
-și-l poate rescrie singur cu cheia publică — deci un elev putea apărea sub numele
-altuia. Dacă două conturi vechi împărțeau același nume, primul îl păstrează, iar
-al doilea primește un sufix (`Ana 2`) la următoarea salvare.
+și este unic **în cadrul grupei** (din `20260904b_profile_name_unique_per_group.sql`
+— unicitatea era inițial globală, dar clasamentele sunt oricum izolate pe grupă,
+deci două conturi din grupe diferite pot avea legitim același nume afișat).
+Anterior era citit din `user_metadata.username`, pe care orice cont și-l poate
+rescrie singur cu cheia publică — deci un elev putea apărea sub numele altuia.
+Dacă două conturi din ACEEAȘI grupă împărțeau același nume, primul îl păstrează,
+iar al doilea primește un sufix (`Ana 2`) la următoarea salvare.
 
 Redenumire administrativă:
 

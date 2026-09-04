@@ -38,6 +38,7 @@ const MIGRATIONS = [
   '20260824_secure_scoring.sql',
   '20260903_harden_identity_groups_attempts.sql',
   '20260904_test_best_of_all_attempts.sql',
+  '20260904b_profile_name_unique_per_group.sql',
 ];
 
 function docker(args, options = {}) {
@@ -185,6 +186,24 @@ check('a second account cannot take an existing display name', () => {
     where user_id = '44444444-4444-4444-8444-444444444444' and quiz_version = '${VERSION}';`);
   assert.notStrictEqual(name, 'Ana', 'impersonation was allowed');
   assert.ok(/^Ana \d+$/.test(name), `expected a disambiguated name, got ${name}`);
+});
+
+check('two accounts in different groups can share a display name', () => {
+  sql(`insert into auth.users (id, email, raw_user_meta_data) values
+      ('66666666-6666-4666-8666-666666666666', 'dup1@talant.app', '{"username":"Dup"}'),
+      ('77777777-7777-4777-8777-777777777777', 'dup2@talant.app', '{"username":"Dup"}')
+    on conflict (id) do nothing;
+    insert into public.talant_group_members (user_id, group_name)
+      values ('77777777-7777-4777-8777-777777777777', 'ci')
+      on conflict (user_id) do update set group_name = excluded.group_name;`);
+  sql(record('dup1@talant.app', EMPTY, 'ffffffff-0000-4000-8000-000000000001'));
+  sql(record('dup2@talant.app', EMPTY, 'ffffffff-0000-4000-8000-000000000002'));
+  const name1 = value(`select user_name from public.talant_test_scores
+    where user_id = '66666666-6666-4666-8666-666666666666' and quiz_version = '${VERSION}';`);
+  const name2 = value(`select user_name from public.talant_test_scores
+    where user_id = '77777777-7777-4777-8777-777777777777' and quiz_version = '${VERSION}';`);
+  assert.strictEqual(name1, 'Dup', `expected no suffix for the first account, got ${name1}`);
+  assert.strictEqual(name2, 'Dup', `a different group still got disambiguated to ${name2}; per-group uniqueness is not working`);
 });
 
 check('a self-chosen @test.com address no longer joins the church group', () => {

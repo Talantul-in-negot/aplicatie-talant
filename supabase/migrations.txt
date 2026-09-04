@@ -3,3 +3,4 @@
 20260824_secure_scoring.sql
 20260903_harden_identity_groups_attempts.sql
 20260904_test_best_of_all_attempts.sql
+20260904b_profile_name_unique_per_group.sql
