@@ -39,6 +39,7 @@ const MIGRATIONS = [
   '20260903_harden_identity_groups_attempts.sql',
   '20260904_test_best_of_all_attempts.sql',
   '20260904b_profile_name_unique_per_group.sql',
+  '20260904c_display_name_email_fallback.sql',
 ];
 
 function docker(args, options = {}) {
@@ -204,6 +205,16 @@ check('two accounts in different groups can share a display name', () => {
     where user_id = '77777777-7777-4777-8777-777777777777' and quiz_version = '${VERSION}';`);
   assert.strictEqual(name1, 'Dup', `expected no suffix for the first account, got ${name1}`);
   assert.strictEqual(name2, 'Dup', `a different group still got disambiguated to ${name2}; per-group uniqueness is not working`);
+});
+
+check('an account with no username metadata gets a name from its email, not "Utilizator"', () => {
+  sql(`insert into auth.users (id, email, raw_user_meta_data) values
+      ('88888888-8888-4888-8888-888888888888', 'nometadata@talant.app', '{}')
+    on conflict (id) do nothing;`);
+  sql(record('nometadata@talant.app', EMPTY, '88888888-0000-4000-8000-000000000001'));
+  const name = value(`select user_name from public.talant_test_scores
+    where user_id = '88888888-8888-4888-8888-888888888888' and quiz_version = '${VERSION}';`);
+  assert.strictEqual(name, 'Nometadata', `expected the email's local part, got ${name}`);
 });
 
 check('a self-chosen @test.com address no longer joins the church group', () => {
