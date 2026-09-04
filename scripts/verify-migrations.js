@@ -40,6 +40,7 @@ const MIGRATIONS = [
   '20260904_test_best_of_all_attempts.sql',
   '20260904b_profile_name_unique_per_group.sql',
   '20260904c_display_name_email_fallback.sql',
+  '20260904d_test_domain_ci_group.sql',
 ];
 
 function docker(args, options = {}) {
@@ -180,11 +181,15 @@ check('display name is frozen against later user_metadata edits', () => {
 });
 
 check('a second account cannot take an existing display name', () => {
-  sql(`update auth.users set raw_user_meta_data = '{"username":"Ana"}'
-       where id = '44444444-4444-4444-8444-444444444444';`);
-  sql(record('nou@test.com', EMPTY, 'dddddddd-0000-4000-8000-000000000001'));
+  // Cont dedicat, pe @talant.app, ca fallback-ul de domeniu @test.com din
+  // 20260904d să nu-l scoată din grupa 'general' a lui Ana și să mascheze
+  // testul (nou@test.com are propriul test, mai jos, tocmai pentru fallback).
+  sql(`insert into auth.users (id, email, raw_user_meta_data) values
+      ('99999999-9999-4999-8999-999999999999', 'impostor@talant.app', '{"username":"Ana"}')
+    on conflict (id) do nothing;`);
+  sql(record('impostor@talant.app', EMPTY, 'dddddddd-0000-4000-8000-000000000001'));
   const name = value(`select user_name from public.talant_test_scores
-    where user_id = '44444444-4444-4444-8444-444444444444' and quiz_version = '${VERSION}';`);
+    where user_id = '99999999-9999-4999-8999-999999999999' and quiz_version = '${VERSION}';`);
   assert.notStrictEqual(name, 'Ana', 'impersonation was allowed');
   assert.ok(/^Ana \d+$/.test(name), `expected a disambiguated name, got ${name}`);
 });
@@ -218,8 +223,24 @@ check('an account with no username metadata gets a name from its email, not "Uti
 });
 
 check('a self-chosen @test.com address no longer joins the church group', () => {
+  // Depuis 20260904d, un email @test.com fără intrare explicită în
+  // talant_group_members cade pe 'ci' (grupa de carantină, izolată din
+  // clasamentul real) — nu mai există nicio cale, prin domeniu, către o
+  // grupă privilegiată precum 'biserica'. Oricum e discutabil: signUp() din
+  // auth.js nu lasă niciodată un elev să aleagă un email/domeniu — accountul
+  // ăsta e inserat direct în test, ca să simuleze un apel direct la API-ul
+  // Supabase, ocolind formularul.
   const group = value(`select auth.sign_in_as('nou@test.com'); select public.talant_my_group();`).split('\n').pop();
-  assert.strictEqual(group, 'general', `self-registered church domain landed in ${group}`);
+  assert.strictEqual(group, 'ci', `self-registered @test.com landed in ${group}, expected the quarantine group`);
+  assert.notStrictEqual(group, 'biserica', 'self-registered church domain landed in the privileged church group');
+});
+
+check('the @test.com fallback only applies without an explicit group membership', () => {
+  // vechi@test.com are deja o intrare explicită în talant_group_members
+  // ('biserica', populată din vechea regulă la migrarea de întărire) — asta
+  // trebuie să câștige mereu în fața fallback-ului pe domeniu.
+  const group = value(`select auth.sign_in_as('vechi@test.com'); select public.talant_my_group();`).split('\n').pop();
+  assert.strictEqual(group, 'biserica', `explicit membership was overridden by the domain fallback: ${group}`);
 });
 
 check('accounts already in the church group keep it', () => {
